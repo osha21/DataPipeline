@@ -1,0 +1,60 @@
+---
+title: "DataAnalysis"
+output: html_document
+date: "2025-11-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## load csv files
+eng <- read.csv("questionnaire_19.csv")
+agency <- read.csv("questionnaire_13.csv")
+
+## calculate average
+eng$Engagement_Avg <- rowMeans(eng, na.rm = TRUE)
+agency$Agency_Avg <- rowMeans(agency, na.rm = TRUE)
+
+
+df <- data.frame(
+  Participant = 1:nrow(eng),
+  Engagement  = eng$Engagement_Avg,
+  Agency      = agency$Agency_Avg
+)
+
+## compute median
+eng_median    <- median(df$Engagement)
+agency_median <- median(df$Agency)
+
+eng_median
+agency_median
+
+##the median is not static (3/3) We would need to ask luis about this. 
+##It would probably make it easier for us to find patterns if it is dynamic
+
+##make profiles
+df$Engagement_Group <- ifelse(df$Engagement >= eng_median,
+                              "High Engagement", "Low Engagement")
+
+df$Agency_Group <- ifelse(df$Agency >= agency_median,
+                          "High Agency", "Low Agency")
+
+df$Profile <- paste(df$Engagement_Group, df$Agency_Group, sep = " / ")
+
+
+##plot
+ggplot(df, aes(x = Agency, y = Engagement, color = Profile)) +
+  geom_point(size = 3) +
+  geom_hline(yintercept = eng_median, linetype = "dashed") +
+  geom_vline(xintercept = agency_median, linetype = "dashed") +
+  xlim(1, 5) +
+  ylim(1, 5) +
+  labs(
+    title = "Engagement vs Agency (4 Profiles)",
+    x = "Average Agency Score",
+    y = "Average Engagement Score"
+  ) +
+  theme_minimal()
+  
+
