@@ -1,0 +1,68 @@
+---
+title: "ProfilingClusters"
+output: html_document
+---
+
+eng <- read.csv("Engagement.csv")
+agency <- read.csv("SenseofAgency.csv")
+
+## compute averages (skip first column = participant ID)
+eng$Engagement_Avg <- rowMeans(eng[, -1], na.rm = TRUE)
+agency$Agency_Avg  <- rowMeans(agency[, -1], na.rm = TRUE)
+
+## combine into dataframe
+df <- data.frame(
+  Participant = eng[[1]],
+  Engagement  = eng$Engagement_Avg,
+  Agency      = agency$Agency_Avg
+)
+
+## ---- K-MEANS CLUSTERING (k = 3) ----
+set.seed(123)  # ensures reproducibility
+k <- 4
+
+cluster_model <- kmeans(df[, c("Engagement", "Agency")], centers = k)
+
+## assign cluster labels
+df$Cluster <- factor(cluster_model$cluster)
+
+## plot clusters
+library(ggplot2)
+library(factoextra)
+
+#elbow plot
+#-------------------------------------------
+data_kmeans <- df[, c("Engagement", "Agency")]
+
+fviz_nbclust(data_kmeans, 
+             kmeans, 
+             method = "wss") +
+  labs(
+    title = "Elbow Method for Optimal Number of Clusters",
+    x = "Number of Clusters (k)",
+    y = "Within-Cluster Sum of Squares"
+  ) +
+  theme_minimal()
+
+#-------------------------------------------
+
+
+library(ggrepel)
+
+ggplot(df, aes(x = Agency, y = Engagement, color = Cluster)) +
+  geom_point(size = 3) +
+  geom_text_repel(
+    aes(label = Participant, color = Cluster),   # <-- color mapped to cluster
+    size = 3,
+    show.legend = FALSE                         # text color won’t clutter legend
+  ) +
+  geom_hline(yintercept = 3, linetype = "dashed") +
+  geom_vline(xintercept = 3, linetype = "dashed") +
+  xlim(1, 5) +
+  ylim(1, 5) +
+  labs(
+    title = "Engagement vs Agency (4 K-means Clusters)",
+    x = "Average Agency Score",
+    y = "Average Engagement Score"
+  ) +
+  theme_minimal()

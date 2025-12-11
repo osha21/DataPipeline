@@ -9,52 +9,52 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## load csv files
-eng <- read.csv("questionnaire_19.csv")
-agency <- read.csv("questionnaire_13.csv")
+eng <- read.csv("Engagement.csv")
+agency <- read.csv("SenseofAgency.csv")
 
-## calculate average
-eng$Engagement_Avg <- rowMeans(eng, na.rm = TRUE)
-agency$Agency_Avg <- rowMeans(agency, na.rm = TRUE)
+## calculate averages (skip first column)
+eng$Engagement_Avg <- rowMeans(eng[ , -1], na.rm = TRUE)
+agency$Agency_Avg  <- rowMeans(agency[ , -1], na.rm = TRUE)
 
-
+## build combined dataframe
 df <- data.frame(
-  Participant = 1:nrow(eng),
+  Participant = eng[[1]],        # keep original participant number
   Engagement  = eng$Engagement_Avg,
   Agency      = agency$Agency_Avg
 )
 
-## compute median
-eng_median    <- median(df$Engagement)
-agency_median <- median(df$Agency)
+## compute medians
+eng_median    <- median(df$Engagement, na.rm = TRUE)
+agency_median <- median(df$Agency,    na.rm = TRUE)
 
-eng_median
-agency_median
-
-##the median is not static (3/3) We would need to ask luis about this. 
-##It would probably make it easier for us to find patterns if it is dynamic
-
-##make profiles
-df$Engagement_Group <- ifelse(df$Engagement >= eng_median,
+## make profiles
+df$Engagement_Group <- ifelse(df$Engagement >= 3,
                               "High Engagement", "Low Engagement")
-
-df$Agency_Group <- ifelse(df$Agency >= agency_median,
+df$Agency_Group <- ifelse(df$Agency >= 3,
                           "High Agency", "Low Agency")
 
-df$Profile <- paste(df$Engagement_Group, df$Agency_Group, sep = " / ")
+df$Profile4 <- paste(df$Engagement_Group, df$Agency_Group, sep = " / ")
 
+## collapse to 3 profiles (example: merge all High Engagement into one group)
+df$Profile3 <- dplyr::case_when(
+  df$Profile4 == "Low Engagement / Low Agency"  ~ "Low Engagement / Low Agency",
+  df$Profile4 == "Low Engagement / High Agency" ~ "Low Engagement / High Agency",
+  TRUE                                         ~ "High Engagement / High Agency"
+)
 
-##plot
-ggplot(df, aes(x = Agency, y = Engagement, color = Profile)) +
+library(ggplot2)
+
+ggplot(df, aes(x = Agency, y = Engagement, color = Profile3)) +
   geom_point(size = 3) +
-  geom_hline(yintercept = eng_median, linetype = "dashed") +
-  geom_vline(xintercept = agency_median, linetype = "dashed") +
+  geom_hline(yintercept = 3, linetype = "dashed") +
+  geom_vline(xintercept = 3, linetype = "dashed") +
   xlim(1, 5) +
   ylim(1, 5) +
   labs(
-    title = "Engagement vs Agency (4 Profiles)",
+    title = "Engagement vs Agency (3 Conceptual Profiles)",
     x = "Average Agency Score",
-    y = "Average Engagement Score"
+    y = "Average Engagement Score",
+    color = "Profile"
   ) +
   theme_minimal()
-  
 
