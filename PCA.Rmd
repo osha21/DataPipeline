@@ -1,0 +1,69 @@
+---
+title: "PCA"
+output: html_document
+---
+
+df <- read.csv2("player_features.csv", dec = ",")
+
+telemetry_vars <- df[, c("mean_morality", "var_morality", "std_morality", "final_morality", "npc_interactions", "number_puzzles_started", "number_puzzles_succeeded", "number_puzzles_failed", "puzzle_success_rate", "average_time_spent_puzzles", "time_complete_game", "ending_achieved")]
+
+
+
+#standardize data
+
+telemetry_scaled <- scale(telemetry_vars)
+
+#PCA
+
+pca_result <- prcomp(telemetry_scaled, center = FALSE, scale. = FALSE)
+summary(pca_result)
+
+#extract PC1 and PC2
+scores <- as.data.frame(pca_result$x[, 1:2])
+colnames(scores) <- c("PC1", "PC2")
+
+scores$player_id <- df$player_id
+
+#elbow plot
+#----------------------
+set.seed(123)
+
+# Compute total within-cluster sum of squares for k = 1 to 10
+wss <- sapply(1:10, function(k) {
+  kmeans(scores, centers = k, nstart = 20)$tot.withinss
+})
+
+# Plot Elbow
+plot(1:10, wss, type = "b",
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster sum of squares",
+     main = "Elbow Plot for PCA")
+#----------------------
+
+#K-means
+
+km <- kmeans(scores[, c("PC1", "PC2")], centers = 3, nstart = 25)
+
+scores$cluster <- as.factor(km$cluster)
+
+#plot
+library(ggplot2)
+
+ggplot(scores, aes(PC1, PC2, color = cluster, label = player_id)) +
+  geom_point(size = 3) +
+  geom_text(vjust = -0.6) +
+  theme_minimal() +
+  labs(
+    title = "K-means Principle Component Analysis",
+    x = "PC1",
+    y = "PC2",
+    color = "Cluster"
+  )
+
+#loadings
+round(pca_result$rotation[, 1:2], 3)
+
+
+
+
+

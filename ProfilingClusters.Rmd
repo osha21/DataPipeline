@@ -17,7 +17,7 @@ df <- data.frame(
   Agency      = agency$Agency_Avg
 )
 
-## ---- K-MEANS CLUSTERING (k = 3) ----
+## ---- K-MEANS CLUSTERING (k = 4) ----
 set.seed(123)  # ensures reproducibility
 k <- 4
 
@@ -29,6 +29,11 @@ df$Cluster <- factor(cluster_model$cluster)
 ## plot clusters
 library(ggplot2)
 library(factoextra)
+library(knitr)
+
+#new
+names(df)[names(df) == "Participant"] <- "player_id"
+
 
 #elbow plot
 #-------------------------------------------
@@ -52,7 +57,7 @@ library(ggrepel)
 ggplot(df, aes(x = Agency, y = Engagement, color = Cluster)) +
   geom_point(size = 3) +
   geom_text_repel(
-    aes(label = Participant, color = Cluster),   # <-- color mapped to cluster
+    aes(label = player_id, color = Cluster),   # <-- color mapped to cluster
     size = 3,
     show.legend = FALSE                         # text color won’t clutter legend
   ) +
@@ -66,3 +71,74 @@ ggplot(df, aes(x = Agency, y = Engagement, color = Cluster)) +
     y = "Average Engagement Score"
   ) +
   theme_minimal()
+  
+#------------------------------------------------------------------------------
+#PCA
+
+
+beh <- read.csv2("player_features.csv", dec = ",")
+
+telemetry_vars <- beh[, c("mean_morality", "var_morality", "std_morality", "final_morality", "npc_interactions", "number_puzzles_started", "number_puzzles_succeeded", "number_puzzles_failed", "puzzle_success_rate", "average_time_spent_puzzles", "time_complete_game", "ending_achieved")]
+
+
+
+#standardize data
+
+telemetry_scaled <- scale(telemetry_vars)
+
+#PCA
+
+pca_result <- prcomp(telemetry_scaled, center = FALSE, scale. = FALSE)
+summary(pca_result)
+
+#extract PC1 and PC2
+scores <- as.data.frame(pca_result$x[, 1:2])
+colnames(scores) <- c("PC1", "PC2")
+
+scores$player_id <- beh$player_id
+
+#elbow plot
+#----------------------
+set.seed(123)
+
+# Compute total within-cluster sum of squares for k = 1 to 10
+wss <- sapply(1:10, function(k) {
+  kmeans(scores, centers = k, nstart = 20)$tot.withinss
+})
+
+# Plot Elbow
+plot(1:10, wss, type = "b",
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster sum of squares",
+     main = "Elbow Plot for PCA")
+#----------------------
+
+#K-means
+
+km <- kmeans(scores[, c("PC1", "PC2")], centers = 3, nstart = 25)
+
+scores$behavior_cluster <- factor(km$cluster)
+
+#plot
+
+ggplot(scores, aes(PC1, PC2, color = behavior_cluster, label = player_id)) +
+  geom_point(size = 3) +
+  geom_text(vjust = -0.6) +
+  theme_minimal() +
+  labs(
+    title = "K-means Principle Component Analysis",
+    x = "PC1",
+    y = "PC2",
+    color = "Cluster"
+  )
+
+#loadings
+round(pca_result$rotation[, 1:2], 3)
+
+#------------------------------------------------------------------------------
+#compare
+
+merged <- merge(df,scores[, c("player_id", "behavior_cluster")],by = "player_id")
+
+tab <- table(merged$Cluster, merged$behavior_cluster)
+kable(tab, caption = "Self-report Clusters (rows) vs Behavioral Clusters (columns)")
