@@ -76,9 +76,9 @@ ggplot(df, aes(x = Agency, y = Engagement, color = Cluster)) +
 #PCA
 
 
-beh <- read.csv2("player_features.csv", dec = ",")
+beh <- read.csv2("player_features_.csv", dec = ",", check.names = FALSE)
 
-telemetry_vars <- beh[, c("mean_morality", "var_morality", "std_morality", "final_morality", "npc_interactions", "number_puzzles_started", "number_puzzles_succeeded", "number_puzzles_failed", "puzzle_success_rate", "average_time_spent_puzzles", "time_complete_game", "ending_achieved")]
+telemetry_vars <- beh[, c("mean_morality", "var_morality", "std_morality", "final_morality", "npc_interactions", "number_puzzles_started", "number_puzzles_succeeded", "number_puzzles_failed", "puzzle_success_rate", "average_time_spent_puzzles", "time_complete_game", "ending_achieved", "%_exploration", "%_puzzle", "%_moral_decisions", "state_entropy", "number_hotspots", "pct_time_in_hotspots", "peak_density_value")]
 
 
 
@@ -142,3 +142,9 @@ merged <- merge(df,scores[, c("player_id", "behavior_cluster")],by = "player_id"
 
 tab <- table(merged$Cluster, merged$behavior_cluster)
 kable(tab, caption = "Self-report Clusters (rows) vs Behavioral Clusters (columns)")
+
+
+fisher.test(tab)
+
+
+cramersV(tab)
