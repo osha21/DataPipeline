@@ -147,4 +147,19 @@ kable(tab, caption = "Self-report Clusters (rows) vs Behavioral Clusters (column
 fisher.test(tab)
 
 
-cramersV(tab)
+#Fisher's exact test used on the profile(2) with the most appearances in 
+#behavior cluster 1
+
+tab1 <- matrix(
+  c(4, 7,
+    4, 10),
+  nrow = 2,
+  byrow = TRUE
+)
+
+rownames(tab1) <- c("Profile_X", "Other_profiles")
+colnames(tab1) <- c("In_cluster", "Not_in_cluster")
+
+tab1
+
+fisher.test(tab1, alternative = "greater")
